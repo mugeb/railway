@@ -18,8 +18,14 @@ from playhouse.shortcuts import model_to_dict
 ########################################
 # Begin database stuff
 
-DB = SqliteDatabase('predictions.db')
+#DB = SqliteDatabase('predictions.db')
+import os
+from playhouse.db_url import connect
 
+# The connect function checks if there is a DATABASE_URL env var.
+# If it exists, it uses it to connect to a remote postgres db.
+# Otherwise, it connects to a local sqlite db stored in the predictions.db file.
+DB = connect(os.environ.get('DATABASE_URL') or 'sqlite:///predictions.db')
 
 class Prediction(Model):
     observation_id = IntegerField(unique=True)
@@ -66,7 +72,15 @@ def predict():
     obs_dict = request.get_json()
     _id = obs_dict['id']
     observation = obs_dict['observation']
-    obs = pd.DataFrame([observation], columns=columns).astype(dtypes)
+    
+    try:
+        obs = pd.DataFrame([observation], columns=columns).astype(dtypes)
+    except ValueError:
+        error_msg = "Observation is invalid!"
+        response = {'error': error_msg}
+        print(response)
+    return jsonify(response)
+    
     proba = pipeline.predict_proba(obs)[0, 1]
     response = {'proba': proba}
     p = Prediction(

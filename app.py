@@ -79,7 +79,7 @@ def predict():
         error_msg = "Observation is invalid!"
         response = {'error': error_msg}
         print(response)
-    return jsonify(response)
+        return jsonify(response)
     
     proba = pipeline.predict_proba(obs)[0, 1]
     response = {'proba': proba}
